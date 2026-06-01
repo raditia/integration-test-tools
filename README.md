@@ -57,10 +57,10 @@ Tests are organized in `describe` blocks. The page loads once in `beforeAll` and
 import { setupVisualTest } from 'integration-test-tools';
 
 describe('Bus Search - Filter', () => {
-  const { goto, screenshot, click, waitFor, waitForResponse, pause } = setupVisualTest();
+  const { goto, baseUrl, screenshot, click, waitFor, waitForResponse, pause } = setupVisualTest();
 
   beforeAll(async () => {
-    await goto('/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01');
+    await goto(`${baseUrl}/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01`);
   });
 
   it('shows initial results', async () => {
@@ -131,7 +131,8 @@ docker run --rm \
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `goto` | `(path, options?)` | Navigate to URL (prepends baseUrl) |
+| `baseUrl` | `string` | Resolved base URL — compose full URLs: `` `${baseUrl}/your/path` `` |
+| `goto` | `(url, options?)` | Navigate to full URL |
 | `screenshot` | `(options?)` | Capture + auto-save with derived name |
 | `click` | `(selector)` | Click element |
 | `waitFor` | `(selector, timeout?)` | Wait for element to appear in DOM |

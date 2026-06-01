@@ -17,7 +17,9 @@ export interface ScreenshotOverride {
 }
 
 export interface VisualTestHelpers {
-  goto: (path: string, options?: GotoOptions) => Promise<void>;
+  /** Resolved base URL (protocol + host + port). Compose full URLs with this: `${baseUrl}/your/path`. */
+  baseUrl: string;
+  goto: (url: string, options?: GotoOptions) => Promise<void>;
   screenshot: (options?: ScreenshotOverride) => Promise<void>;
   click: (selector: string) => Promise<void>;
   waitFor: (selector: string, timeout?: number) => Promise<void>;
@@ -86,8 +88,10 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
   });
 
   return {
-    async goto(urlPath, options = {}) {
-      await page.goto(`${baseUrl}${urlPath}`, {
+    baseUrl,
+
+    async goto(url, options = {}) {
+      await page.goto(url, {
         waitUntil: options.waitUntil ?? 'networkidle',
       });
     },
