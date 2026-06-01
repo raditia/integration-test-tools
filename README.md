@@ -7,7 +7,7 @@ Installable npm package providing visual regression testing infrastructure and c
 - Jest preset that wires [`jest-image-snapshot`](https://github.com/americanexpress/jest-image-snapshot) with zero boilerplate
 - Configurable pixel diff threshold, snapshot directory, and failure type
 - CLI to merge Istanbul JSON coverage reports from multiple packages into one combined report
-- Designed to pair with [`playwright-chromium-image`](https://github.com/raditia/playwright-chromium-image) for consistent CI rendering
+- Designed to pair with [`playwright-docker`](https://github.com/raditia/playwright-docker) for consistent CI rendering
 
 ## Install
 
@@ -142,7 +142,7 @@ docker run --rm \
   -e DISPLAY=host.docker.internal:0 \
   -e ITTOOLS_HEADLESS=false \
   -e ITTOOLS_BASE_HOST=host.docker.internal \
-  ghcr.io/raditia/playwright-chromium-image:latest \
+  ghcr.io/raditia/playwright-docker:latest \
   pnpm integration-test:base
 ```
 
@@ -160,7 +160,7 @@ docker run --rm \
   -e ITTOOLS_HEADLESS=false \
   -e ITTOOLS_BASE_HOST=host.docker.internal \
   --add-host=host.docker.internal:host-gateway \
-  ghcr.io/raditia/playwright-chromium-image:latest \
+  ghcr.io/raditia/playwright-docker:latest \
   pnpm integration-test:base
 ```
 
@@ -184,14 +184,14 @@ docker run --rm \
 # macOS / Windows Docker Desktop
 docker run --rm \
   -e ITTOOLS_BASE_HOST=host.docker.internal \
-  ghcr.io/raditia/playwright-chromium-image:latest \
+  ghcr.io/raditia/playwright-docker:latest \
   pnpm test:visual
 
 # Linux — host.docker.internal not automatic, requires --add-host flag
 docker run --rm \
   --add-host=host.docker.internal:host-gateway \
   -e ITTOOLS_BASE_HOST=host.docker.internal \
-  ghcr.io/raditia/playwright-chromium-image:latest \
+  ghcr.io/raditia/playwright-docker:latest \
   pnpm test:visual
 ```
 
@@ -288,7 +288,7 @@ jobs:
   visual-regression:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/raditia/playwright-chromium-image:latest
+      image: ghcr.io/raditia/playwright-docker:latest
     steps:
       - uses: actions/checkout@v4
         with:
