@@ -47,6 +47,20 @@ function deriveSnapshotPath(snapshotsBase: string): { dir: string; identifier: s
   };
 }
 
+/**
+ * Resolves the base URL from environment variables.
+ * ITTOOLS_BASE_HOST defaults to 'localhost' — set to 'host.docker.internal' when running
+ * tests inside Docker locally so the container can reach the host app server.
+ * ITTOOLS_BASE_PORT defaults to '2900'.
+ * ITTOOLS_BASE_URL overrides both (full URL, e.g. 'https://staging.example.com').
+ */
+function resolveBaseUrl(): string {
+  if (process.env.ITTOOLS_BASE_URL) return process.env.ITTOOLS_BASE_URL;
+  const host = process.env.ITTOOLS_BASE_HOST ?? 'localhost';
+  const port = process.env.ITTOOLS_BASE_PORT ?? '2900';
+  return `http://${host}:${port}`;
+}
+
 export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTestHelpers {
   let browser: Browser;
   let page: Page;
@@ -54,7 +68,7 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
   const globalConfig: Partial<IttoolsConfig> =
     (global as Record<string, unknown>).ittoolsConfig as Partial<IttoolsConfig> ?? {};
 
-  const baseUrl = overrides.baseUrl ?? globalConfig.baseUrl ?? 'http://localhost:2900';
+  const baseUrl = overrides.baseUrl ?? globalConfig.baseUrl ?? resolveBaseUrl();
   const snapshotsBase = globalConfig.snapshotDir ?? 'snapshots';
   // snapdiff sits alongside snapshots/ — e.g. 'test/snapshots' → 'test/snapdiff'
   const snapdiffBase = path.join(path.dirname(snapshotsBase), 'snapdiff');

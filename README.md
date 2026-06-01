@@ -106,11 +106,26 @@ Pattern: `{snapshotDir}/{suite-folder-name}/{describe-name}--{test-name}.png`
 await screenshot({ name: 'my-custom-name' });
 ```
 
-### Override base URL per file
+### Base URL resolution
 
-```ts
-const { goto, screenshot } = setupVisualTest({ baseUrl: 'http://localhost:3000' });
+`baseUrl` is resolved in this priority order:
+
+1. `setupVisualTest({ baseUrl: '...' })` — inline override
+2. `ittoolsConfig.baseUrl` in jest.config.js
+3. `ITTOOLS_BASE_URL` env var — full URL override (e.g. staging environment)
+4. `ITTOOLS_BASE_HOST` + `ITTOOLS_BASE_PORT` — composed: `http://${host}:${port}`
+5. Default: `http://localhost:2900`
+
+**Running tests inside Docker locally** — `localhost` inside the container points to the container, not the host. Use `host.docker.internal` instead:
+
+```bash
+docker run --rm \
+  -e ITTOOLS_BASE_HOST=host.docker.internal \
+  ghcr.io/raditia/playwright-chromium-image:latest \
+  pnpm test:visual
 ```
+
+**CI (GitHub Actions `container:`)** — app server runs in the same container, `localhost` works. No env override needed.
 
 ### Available actions
 
