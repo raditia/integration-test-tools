@@ -79,15 +79,42 @@ const { screenshot } = setupVisualTest({ baseUrl: 'http://localhost:3000' });
 
 ### Interact before screenshot
 
+Use the `steps` array with built-in action helpers — no `page` exposure needed:
+
 ```ts
-it('renders page with filter applied', async () => {
+import { setupVisualTest, waitFor, click, pause, waitForResponse } from 'integration-test-tools';
+
+const { screenshot } = setupVisualTest();
+
+it('renders with AC filter applied', async () => {
   const image = await screenshot('/en-us/bus-and-shuttle/search', {
-    beforeScreenshot: async (page) => {
-      await page.click('[data-testid="filter-ac"]');
-      await page.waitForResponse('**/search**');
-    },
+    steps: [
+      waitFor('[data-testid="filter-ac"]'),
+      click('[data-testid="filter-ac"]'),
+      waitForResponse('**/search**'),
+      pause(300),
+    ],
   });
   expect(image).toMatchImageSnapshot();
+});
+```
+
+| Helper | Signature | Description |
+|--------|-----------|-------------|
+| `waitFor` | `(selector, timeout?)` | Wait for element to appear in DOM |
+| `click` | `(selector)` | Click element |
+| `pause` | `(ms)` | Wait fixed milliseconds |
+| `waitForResponse` | `(urlPattern)` | Wait for network response matching string or RegExp |
+
+For interactions beyond these, use the `beforeScreenshot` escape hatch:
+
+```ts
+it('...', async () => {
+  const image = await screenshot('/path', {
+    beforeScreenshot: async (page) => {
+      // full Playwright Page API available here
+    },
+  });
 });
 ```
 
