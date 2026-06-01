@@ -50,31 +50,55 @@ module.exports = defineConfig({
 
 ## Writing visual tests
 
-Tests use Playwright to screenshot a running app, then compare against a stored baseline PNG.
+`setupVisualTest()` handles browser launch/teardown — no boilerplate per file.
 
 ```ts
 // MyPage.visual.test.ts
-import { chromium } from 'playwright';
+import { setupVisualTest } from 'integration-test-tools';
 
-let browser: Awaited<ReturnType<typeof chromium.launch>>;
+const { screenshot } = setupVisualTest();
 
-beforeAll(async () => {
-  browser = await chromium.launch();
+it('renders bus search result page', async () => {
+  const image = await screenshot('/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01');
+  expect(image).toMatchImageSnapshot();
 });
 
-afterAll(async () => {
-  await browser.close();
-});
-
-it('renders search result page', async () => {
-  const page = await browser.newPage();
-  await page.goto('http://localhost:2900/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01');
-  await page.waitForLoadState('networkidle');
-
-  const screenshot = await page.screenshot({ fullPage: true });
-  expect(screenshot).toMatchImageSnapshot();
+it('renders train search result page', async () => {
+  const image = await screenshot('/en-us/kereta-api/search?from=GMR&to=BD&date=2026-06-01');
+  expect(image).toMatchImageSnapshot();
 });
 ```
+
+`baseUrl` defaults to `http://localhost:2900` (from `ittoolsConfig.baseUrl` in jest.config.js). Pass a path — the helper prepends the base.
+
+### Override base URL per file
+
+```ts
+const { screenshot } = setupVisualTest({ baseUrl: 'http://localhost:3000' });
+```
+
+### Interact before screenshot
+
+```ts
+it('renders page with filter applied', async () => {
+  const image = await screenshot('/en-us/bus-and-shuttle/search', {
+    beforeScreenshot: async (page) => {
+      await page.click('[data-testid="filter-ac"]');
+      await page.waitForResponse('**/search**');
+    },
+  });
+  expect(image).toMatchImageSnapshot();
+});
+```
+
+### Screenshot options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `fullPage` | `boolean` | `true` | Capture full scrollable page |
+| `waitUntil` | `'load' \| 'domcontentloaded' \| 'networkidle'` | `'networkidle'` | Navigation wait condition |
+| `viewport` | `{ width, height }` | `{ width: 1280, height: 900 }` | Browser viewport |
+| `beforeScreenshot` | `(page: Page) => Promise<void>` | — | Hook to interact before capture |
 
 ### Updating baselines
 
@@ -115,6 +139,7 @@ npx ittools merge-coverage
 | `failureThresholdType` | `'percent' \| 'pixel'` | `'percent'` | How threshold is measured |
 | `snapshotDir` | `string` | `'__image_snapshots__'` | Where baseline PNGs are stored |
 | `coverageReports` | `string[]` | `[]` | Paths to Istanbul JSON files for merge |
+| `baseUrl` | `string` | `'http://localhost:2900'` | Base URL for `setupVisualTest()` |
 
 ## Git LFS
 

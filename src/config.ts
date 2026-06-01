@@ -7,6 +7,7 @@ export interface IttoolsConfig {
   failureThresholdType: 'percent' | 'pixel';
   snapshotDir: string;
   coverageReports: string[];
+  baseUrl: string;
 }
 
 const defaults: IttoolsConfig = {
@@ -14,6 +15,7 @@ const defaults: IttoolsConfig = {
   failureThresholdType: 'percent',
   snapshotDir: '__image_snapshots__',
   coverageReports: [],
+  baseUrl: 'http://localhost:2900',
 };
 
 export function defineConfig(config: Partial<IttoolsConfig>): IttoolsConfig {
