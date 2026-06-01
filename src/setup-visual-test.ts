@@ -10,6 +10,10 @@ export interface GotoOptions {
 export interface ScreenshotOverride {
   /** Override the auto-derived snapshot name. */
   name?: string;
+  /** Per-screenshot pixel diff threshold. Overrides global ittoolsConfig.pixelDiffThreshold. */
+  threshold?: number;
+  /** How threshold is measured. Overrides global ittoolsConfig.failureThresholdType. */
+  thresholdType?: 'percent' | 'pixel';
 }
 
 export interface VisualTestHelpers {
@@ -78,6 +82,8 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
         customSnapshotsDir: dir,
         customSnapshotIdentifier: options.name ?? identifier,
         customDiffDir: path.join(dir, '__diff__'),
+        failureThreshold: options.threshold ?? globalConfig.pixelDiffThreshold ?? 0.01,
+        failureThresholdType: options.thresholdType ?? globalConfig.failureThresholdType ?? 'percent',
       });
     },
 
