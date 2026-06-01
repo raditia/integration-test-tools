@@ -124,17 +124,40 @@ const { goto, screenshot } = setupVisualTest({ baseUrl: 'http://localhost:3000' 
 | `waitForResponse` | `(urlPattern)` | Wait for network response matching string or RegExp |
 | `type` | `(selector, text)` | Fill input with text |
 
-### Updating baselines
+### Snapshot folder structure
 
-```bash
-npx ittools update-snapshots
-# prints the exact jest command to run
+```
+test/
+  snapshots/          ← baselines (committed to git via LFS)
+    test-suites-1/
+      bus-search-filter--shows-initial-results.png
+  snapdiff/           ← pixel diffs on failure (gitignored, for local review)
+    test-suites-1/
+      bus-search-filter--shows-initial-results.png
 ```
 
-Or directly:
+`snapdiff/` is auto-derived as a sibling of `snapshots/`. Add it to `.gitignore` — it's for local diff review only, not committed.
 
+### Updating baselines
+
+When a snapshot differs from the baseline, the test fails and the diff image is written to `snapdiff/`. Two ways to update:
+
+**Option 1 — delete and regenerate a single baseline:**
+```bash
+rm test/snapshots/test-suites-1/bus-search-filter--shows-initial-results.png
+jest --testPathPattern="BusSearchFilter"
+```
+
+**Option 2 — update all changed snapshots at once:**
 ```bash
 jest --updateSnapshot --testPathPattern="\.visual\.test"
+```
+
+**Via CLI helper (prints the command with hints):**
+```bash
+npx ittools update-snapshots
+# or for a specific suite:
+npx ittools update-snapshots "test-suites-1"
 ```
 
 ## Coverage merge
@@ -195,5 +218,5 @@ jobs:
         if: failure()
         with:
           name: snapshot-diffs
-          path: '**/__image_snapshots__/__diff_output__'
+          path: '**/snapdiff/**'
 ```

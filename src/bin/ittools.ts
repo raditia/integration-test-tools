@@ -19,7 +19,18 @@ async function main(): Promise<void> {
     }
 
     case 'update-snapshots': {
-      console.log('[ittools] Run: jest --updateSnapshot --testPathPattern="\\.visual\\.test"');
+      const pattern = args[0] ?? '\\.visual\\.test';
+      console.log(
+        [
+          '[ittools] To update all visual snapshots:',
+          `  jest --updateSnapshot --testPathPattern="${pattern}"`,
+          '',
+          '[ittools] To update a specific suite:',
+          `  jest --updateSnapshot --testPathPattern="test-suites-1"`,
+          '',
+          '[ittools] Diff images in snapdiff/ are cleared automatically on next run after update.',
+        ].join('\n')
+      );
       break;
     }
 

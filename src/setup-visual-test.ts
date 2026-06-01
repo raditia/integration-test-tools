@@ -55,6 +55,8 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
 
   const baseUrl = overrides.baseUrl ?? globalConfig.baseUrl ?? 'http://localhost:2900';
   const snapshotsBase = globalConfig.snapshotDir ?? 'snapshots';
+  // snapdiff sits alongside snapshots/ — e.g. 'test/snapshots' → 'test/snapdiff'
+  const snapdiffBase = path.join(path.dirname(snapshotsBase), 'snapdiff');
 
   beforeAll(async () => {
     browser = await chromium.launch();
@@ -81,7 +83,7 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
       expect(image).toMatchImageSnapshot({
         customSnapshotsDir: dir,
         customSnapshotIdentifier: options.name ?? identifier,
-        customDiffDir: path.join(dir, '__diff__'),
+        customDiffDir: path.join(snapdiffBase, path.basename(dir)),
         failureThreshold: options.threshold ?? globalConfig.pixelDiffThreshold ?? 0.01,
         failureThresholdType: options.thresholdType ?? globalConfig.failureThresholdType ?? 'percent',
       });
