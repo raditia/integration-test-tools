@@ -65,7 +65,9 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
   const snapdiffBase = path.join(path.dirname(snapshotsBase), 'snapdiff');
 
   beforeAll(async () => {
-    browser = await chromium.launch();
+    const headless = process.env.ITTOOLS_HEADLESS !== 'false';
+    const slowMo = process.env.ITTOOLS_SLOW_MO ? parseInt(process.env.ITTOOLS_SLOW_MO, 10) : undefined;
+    browser = await chromium.launch({ headless, slowMo });
     _page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   });
 

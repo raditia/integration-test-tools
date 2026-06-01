@@ -107,6 +107,53 @@ Pattern: `{snapshotDir}/{suite-folder-name}/{describe-name}--{test-name}.png`
 await screenshot({ name: 'my-custom-name' });
 ```
 
+### Headed mode (debug)
+
+By default Chromium runs headless. Set `ITTOOLS_HEADLESS=false` to open a visible browser window. Optionally slow down actions with `ITTOOLS_SLOW_MO` (milliseconds between actions).
+
+```bash
+# run with visible browser, 500ms between actions
+ITTOOLS_HEADLESS=false ITTOOLS_SLOW_MO=500 pnpm test:visual
+```
+
+**Without Docker (local machine)** — works out of the box on macOS and Windows.
+
+**With Docker** — the container has no display. You need an X11 server on the host and forward the display into the container.
+
+#### macOS — XQuartz
+
+1. Install: `brew install --cask xquartz` then log out and back in
+2. Open XQuartz → Preferences → Security → check **Allow connections from network clients**
+3. In a terminal: `xhost +localhost`
+4. Run Docker with display forwarded:
+
+```bash
+docker run --rm \
+  -e DISPLAY=host.docker.internal:0 \
+  -e ITTOOLS_HEADLESS=false \
+  -e ITTOOLS_BASE_HOST=host.docker.internal \
+  ghcr.io/raditia/playwright-chromium-image:latest \
+  pnpm test:visual
+```
+
+#### Windows — MobaXterm
+
+1. Install [MobaXterm](https://mobaxterm.mobatek.net) — X server starts automatically
+2. Find your WSL/Docker host IP (usually `172.x.x.x` or check MobaXterm's X display value)
+3. Run Docker with display forwarded:
+
+```bash
+docker run --rm \
+  -e DISPLAY=<host-ip>:0.0 \
+  -e ITTOOLS_HEADLESS=false \
+  -e ITTOOLS_BASE_HOST=host.docker.internal \
+  --add-host=host.docker.internal:host-gateway \
+  ghcr.io/raditia/playwright-chromium-image:latest \
+  pnpm test:visual
+```
+
+> CI always runs headless — `ITTOOLS_HEADLESS` is not set in CI workflows.
+
 ### Base URL resolution
 
 `baseUrl` is resolved in this priority order:
