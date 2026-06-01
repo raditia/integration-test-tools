@@ -15,6 +15,9 @@ module.exports = {
   snapshotDir: 'snapshots',
   baseUrl: 'http://localhost:2900',
   coverageReports: [],
+  dockerImage: 'ghcr.io/raditia/playwright-docker:latest',
+  dockerPort: 3000,
+  containerName: 'ittools-playwright',
 };
 `;
 
@@ -32,6 +35,8 @@ module.exports = {
 `;
 
 const SCRIPTS = {
+  'integration-test:run-docker': 'ittools run-docker',
+  'integration-test:stop-docker': 'ittools stop-docker',
   'integration-test:base': 'ittools run',
   'integration-test:updateSnapshot': 'ittools run --updateSnapshot',
 };

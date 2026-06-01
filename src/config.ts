@@ -12,6 +12,9 @@ export interface IttoolsConfig {
   snapshotDir: string;
   coverageReports: string[];
   baseUrl: string;
+  dockerImage: string;
+  dockerPort: number;
+  containerName: string;
 }
 
 export const defaults: IttoolsConfig = {
@@ -24,6 +27,9 @@ export const defaults: IttoolsConfig = {
   snapshotDir: 'snapshots',
   coverageReports: [],
   baseUrl: 'http://localhost:2900',
+  dockerImage: 'ghcr.io/raditia/playwright-docker:latest',
+  dockerPort: 3000,
+  containerName: 'ittools-playwright',
 };
 
 export function defineConfig(config: Partial<IttoolsConfig>): IttoolsConfig {
