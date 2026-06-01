@@ -1,97 +1,104 @@
+import * as path from 'path';
 import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
 import type { IttoolsConfig } from './config';
 
-// --- Step types ---
-
-type WaitForSelectorStep = { type: 'waitForSelector'; selector: string; timeout?: number };
-type ClickStep = { type: 'click'; selector: string };
-type PauseStep = { type: 'pause'; ms: number };
-type WaitForResponseStep = { type: 'waitForResponse'; urlPattern: string | RegExp };
-
-export type Step = WaitForSelectorStep | ClickStep | PauseStep | WaitForResponseStep;
-
-export const waitFor = (selector: string, timeout?: number): WaitForSelectorStep =>
-  ({ type: 'waitForSelector', selector, timeout });
-
-export const click = (selector: string): ClickStep =>
-  ({ type: 'click', selector });
-
-export const pause = (ms: number): PauseStep =>
-  ({ type: 'pause', ms });
-
-export const waitForResponse = (urlPattern: string | RegExp): WaitForResponseStep =>
-  ({ type: 'waitForResponse', urlPattern });
-
-async function runStep(page: Page, step: Step): Promise<void> {
-  switch (step.type) {
-    case 'waitForSelector':
-      await page.waitForSelector(step.selector, step.timeout ? { timeout: step.timeout } : undefined);
-      break;
-    case 'click':
-      await page.click(step.selector);
-      break;
-    case 'pause':
-      await page.waitForTimeout(step.ms);
-      break;
-    case 'waitForResponse':
-      await page.waitForResponse(step.urlPattern);
-      break;
-  }
+export interface GotoOptions {
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
 }
 
-// --- Screenshot options ---
-
-export interface ScreenshotOptions {
-  fullPage?: boolean;
-  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
-  viewport?: { width: number; height: number };
-  steps?: Step[];
-  /** Escape hatch for interactions not covered by steps. */
-  beforeScreenshot?: (page: Page) => Promise<void>;
+export interface ScreenshotOverride {
+  /** Override the auto-derived snapshot name. */
+  name?: string;
 }
 
 export interface VisualTestHelpers {
-  screenshot: (path: string, options?: ScreenshotOptions) => Promise<Buffer>;
+  goto: (path: string, options?: GotoOptions) => Promise<void>;
+  screenshot: (options?: ScreenshotOverride) => Promise<void>;
+  click: (selector: string) => Promise<void>;
+  waitFor: (selector: string, timeout?: number) => Promise<void>;
+  pause: (ms: number) => Promise<void>;
+  waitForResponse: (urlPattern: string | RegExp) => Promise<void>;
+  type: (selector: string, text: string) => Promise<void>;
 }
 
-// --- Setup ---
+function deriveSnapshotPath(snapshotsBase: string): { dir: string; identifier: string } {
+  const { currentTestName = 'snapshot', testPath = '' } = expect.getState();
+
+  // test/test-suites-1/Foo.visual.test.ts → test-suites-1
+  const suiteDir = path.basename(path.dirname(testPath));
+
+  // 'Suite Name > test case name' → 'suite-name--test-case-name'
+  const identifier = currentTestName
+    .replace(/\s*>\s*/g, '--')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+
+  return {
+    dir: path.join(snapshotsBase, suiteDir),
+    identifier,
+  };
+}
 
 export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTestHelpers {
   let browser: Browser;
+  let page: Page;
 
   const globalConfig: Partial<IttoolsConfig> =
     (global as Record<string, unknown>).ittoolsConfig as Partial<IttoolsConfig> ?? {};
 
   const baseUrl = overrides.baseUrl ?? globalConfig.baseUrl ?? 'http://localhost:2900';
+  const snapshotsBase = globalConfig.snapshotDir ?? 'snapshots';
 
   beforeAll(async () => {
     browser = await chromium.launch();
+    page = await browser.newPage({
+      viewport: { width: 1280, height: 900 },
+    });
   });
 
   afterAll(async () => {
+    await page.close();
     await browser.close();
   });
 
-  async function screenshot(path: string, options: ScreenshotOptions = {}): Promise<Buffer> {
-    const {
-      fullPage = true,
-      waitUntil = 'networkidle',
-      viewport = { width: 1280, height: 900 },
-      steps = [],
-      beforeScreenshot,
-    } = options;
+  return {
+    async goto(urlPath, options = {}) {
+      await page.goto(`${baseUrl}${urlPath}`, {
+        waitUntil: options.waitUntil ?? 'networkidle',
+      });
+    },
 
-    const page = await browser.newPage({ viewport });
-    try {
-      await page.goto(`${baseUrl}${path}`, { waitUntil });
-      for (const step of steps) await runStep(page, step);
-      if (beforeScreenshot) await beforeScreenshot(page);
-      return await page.screenshot({ fullPage });
-    } finally {
-      await page.close();
-    }
-  }
+    async screenshot(options = {}) {
+      const { dir, identifier } = deriveSnapshotPath(snapshotsBase);
+      const image = await page.screenshot({ fullPage: true });
+      expect(image).toMatchImageSnapshot({
+        customSnapshotsDir: dir,
+        customSnapshotIdentifier: options.name ?? identifier,
+        customDiffDir: path.join(dir, '__diff__'),
+      });
+    },
 
-  return { screenshot };
+    async click(selector) {
+      await page.click(selector);
+    },
+
+    async waitFor(selector, timeout) {
+      await page.waitForSelector(selector, timeout ? { timeout } : undefined);
+    },
+
+    async pause(ms) {
+      await page.waitForTimeout(ms);
+    },
+
+    async waitForResponse(urlPattern) {
+      await page.waitForResponse(urlPattern);
+    },
+
+    async type(selector, text) {
+      await page.fill(selector, text);
+    },
+  };
 }

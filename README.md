@@ -50,82 +50,79 @@ module.exports = defineConfig({
 
 ## Writing visual tests
 
-`setupVisualTest()` handles browser launch/teardown — no boilerplate per file.
+Tests are organized in `describe` blocks. The page loads once in `beforeAll` and **state persists** across all tests — each test continues from where the last left off, mirroring real user behavior.
 
 ```ts
-// MyPage.visual.test.ts
+// test/test-suites-1/BusSearchFilter.visual.test.ts
 import { setupVisualTest } from 'integration-test-tools';
 
-const { screenshot } = setupVisualTest();
+describe('Bus Search - Filter', () => {
+  const { goto, screenshot, click, waitFor, waitForResponse, pause } = setupVisualTest();
 
-it('renders bus search result page', async () => {
-  const image = await screenshot('/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01');
-  expect(image).toMatchImageSnapshot();
-});
+  beforeAll(async () => {
+    await goto('/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01');
+  });
 
-it('renders train search result page', async () => {
-  const image = await screenshot('/en-us/kereta-api/search?from=GMR&to=BD&date=2026-06-01');
-  expect(image).toMatchImageSnapshot();
+  it('shows initial results', async () => {
+    await screenshot();
+    // → snapshots/test-suites-1/bus-search-filter--shows-initial-results.png
+  });
+
+  it('opens filter popup on click', async () => {
+    await click('[data-testid="filter-btn"]');
+    await screenshot();
+    // → snapshots/test-suites-1/bus-search-filter--opens-filter-popup-on-click.png
+  });
+
+  it('shows AC filtered results', async () => {
+    await waitFor('[data-testid="filter-ac"]');
+    await click('[data-testid="filter-ac"]');
+    await click('[data-testid="apply-filter"]');
+    await waitForResponse('**/search**');
+    await screenshot();
+    // → snapshots/test-suites-1/bus-search-filter--shows-ac-filtered-results.png
+  });
 });
 ```
 
-`baseUrl` defaults to `http://localhost:2900` (from `ittoolsConfig.baseUrl` in jest.config.js). Pass a path — the helper prepends the base.
+`screenshot()` auto-derives the snapshot name from the test file directory + describe/test names. No `expect()` needed in test body.
+
+### Snapshot naming
+
+Given test at `test/test-suites-1/BusSearchFilter.visual.test.ts`:
+
+```
+describe('Bus Search - Filter')
+  it('opens filter popup on click')
+  
+→ snapshots/test-suites-1/bus-search-filter--opens-filter-popup-on-click.png
+```
+
+Pattern: `{snapshotDir}/{suite-folder-name}/{describe-name}--{test-name}.png`
+
+### Override snapshot name
+
+```ts
+await screenshot({ name: 'my-custom-name' });
+```
 
 ### Override base URL per file
 
 ```ts
-const { screenshot } = setupVisualTest({ baseUrl: 'http://localhost:3000' });
+const { goto, screenshot } = setupVisualTest({ baseUrl: 'http://localhost:3000' });
 ```
 
-### Interact before screenshot
+### Available actions
 
-Use the `steps` array with built-in action helpers — no `page` exposure needed:
-
-```ts
-import { setupVisualTest, waitFor, click, pause, waitForResponse } from 'integration-test-tools';
-
-const { screenshot } = setupVisualTest();
-
-it('renders with AC filter applied', async () => {
-  const image = await screenshot('/en-us/bus-and-shuttle/search', {
-    steps: [
-      waitFor('[data-testid="filter-ac"]'),
-      click('[data-testid="filter-ac"]'),
-      waitForResponse('**/search**'),
-      pause(300),
-    ],
-  });
-  expect(image).toMatchImageSnapshot();
-});
-```
-
-| Helper | Signature | Description |
+| Method | Signature | Description |
 |--------|-----------|-------------|
-| `waitFor` | `(selector, timeout?)` | Wait for element to appear in DOM |
+| `goto` | `(path, options?)` | Navigate to URL (prepends baseUrl) |
+| `screenshot` | `(options?)` | Capture + auto-save with derived name |
 | `click` | `(selector)` | Click element |
+| `waitFor` | `(selector, timeout?)` | Wait for element to appear in DOM |
 | `pause` | `(ms)` | Wait fixed milliseconds |
 | `waitForResponse` | `(urlPattern)` | Wait for network response matching string or RegExp |
-
-For interactions beyond these, use the `beforeScreenshot` escape hatch:
-
-```ts
-it('...', async () => {
-  const image = await screenshot('/path', {
-    beforeScreenshot: async (page) => {
-      // full Playwright Page API available here
-    },
-  });
-});
-```
-
-### Screenshot options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `fullPage` | `boolean` | `true` | Capture full scrollable page |
-| `waitUntil` | `'load' \| 'domcontentloaded' \| 'networkidle'` | `'networkidle'` | Navigation wait condition |
-| `viewport` | `{ width, height }` | `{ width: 1280, height: 900 }` | Browser viewport |
-| `beforeScreenshot` | `(page: Page) => Promise<void>` | — | Hook to interact before capture |
+| `type` | `(selector, text)` | Fill input with text |
 
 ### Updating baselines
 
@@ -164,7 +161,7 @@ npx ittools merge-coverage
 |--------|------|---------|-------------|
 | `pixelDiffThreshold` | `number` | `0.01` | Max allowed diff (1% of pixels) |
 | `failureThresholdType` | `'percent' \| 'pixel'` | `'percent'` | How threshold is measured |
-| `snapshotDir` | `string` | `'__image_snapshots__'` | Where baseline PNGs are stored |
+| `snapshotDir` | `string` | `'snapshots'` | Root dir for baseline PNGs |
 | `coverageReports` | `string[]` | `[]` | Paths to Istanbul JSON files for merge |
 | `baseUrl` | `string` | `'http://localhost:2900'` | Base URL for `setupVisualTest()` |
 
@@ -174,7 +171,7 @@ Baseline PNGs can grow fast. Track them with Git LFS before committing the first
 
 ```bash
 git lfs install
-git lfs track "**/__image_snapshots__/*.png"
+git lfs track "**/snapshots/**/*.png"
 git add .gitattributes
 ```
 
