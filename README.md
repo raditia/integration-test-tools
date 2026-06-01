@@ -120,7 +120,15 @@ await screenshot({ name: 'my-custom-name' });
 **Running tests inside Docker locally** — `localhost` inside the container points to the container, not the host. Use `host.docker.internal` instead:
 
 ```bash
+# macOS / Windows Docker Desktop
 docker run --rm \
+  -e ITTOOLS_BASE_HOST=host.docker.internal \
+  ghcr.io/raditia/playwright-chromium-image:latest \
+  pnpm test:visual
+
+# Linux — host.docker.internal not automatic, requires --add-host flag
+docker run --rm \
+  --add-host=host.docker.internal:host-gateway \
   -e ITTOOLS_BASE_HOST=host.docker.internal \
   ghcr.io/raditia/playwright-chromium-image:latest \
   pnpm test:visual

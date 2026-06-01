@@ -13,7 +13,7 @@ export interface IttoolsConfig {
 const defaults: IttoolsConfig = {
   pixelDiffThreshold: 0.01,
   failureThresholdType: 'percent',
-  snapshotDir: '__image_snapshots__',
+  snapshotDir: 'snapshots',
   coverageReports: [],
   baseUrl: 'http://localhost:2900',
 };

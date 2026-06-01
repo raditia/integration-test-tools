@@ -3,10 +3,6 @@ import { chromium } from 'playwright';
 import type { Browser, Page } from 'playwright';
 import type { IttoolsConfig } from './config';
 
-export interface GotoOptions {
-  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
-}
-
 export interface ScreenshotOverride {
   /** Override the auto-derived snapshot name. */
   name?: string;
@@ -75,7 +71,7 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
 
   afterAll(async () => {
     await _page?.close();
-    await browser.close();
+    await browser?.close();
   });
 
   const helpers: VisualTestHelpers = {
