@@ -65,7 +65,10 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
   const snapdiffBase = path.join(path.dirname(snapshotsBase), 'snapdiff');
 
   beforeAll(async () => {
-    const headless = process.env.ITTOOLS_HEADLESS !== 'false';
+    // env var takes precedence over config file value
+    const headless = process.env.ITTOOLS_HEADLESS !== undefined
+      ? process.env.ITTOOLS_HEADLESS !== 'false'
+      : (globalConfig.headless ?? true);
     const slowMo = process.env.ITTOOLS_SLOW_MO ? parseInt(process.env.ITTOOLS_SLOW_MO, 10) : undefined;
     browser = await chromium.launch({ headless, slowMo });
     _page = await browser.newPage({ viewport: { width: 1280, height: 900 } });

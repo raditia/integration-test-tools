@@ -3,6 +3,10 @@ import { resolve } from 'path';
 import { pathToFileURL } from 'url';
 
 export interface IttoolsConfig {
+  headless: boolean;
+  retries: number;
+  testMatch: string[];
+  testPathIgnorePatterns: string[];
   pixelDiffThreshold: number;
   failureThresholdType: 'percent' | 'pixel';
   snapshotDir: string;
@@ -10,7 +14,11 @@ export interface IttoolsConfig {
   baseUrl: string;
 }
 
-const defaults: IttoolsConfig = {
+export const defaults: IttoolsConfig = {
+  headless: true,
+  retries: 0,
+  testMatch: ['**/*.visual.test.ts'],
+  testPathIgnorePatterns: ['**/node_modules/**'],
   pixelDiffThreshold: 0.01,
   failureThresholdType: 'percent',
   snapshotDir: 'snapshots',
@@ -23,7 +31,11 @@ export function defineConfig(config: Partial<IttoolsConfig>): IttoolsConfig {
 }
 
 export async function loadConfig(cwd = process.cwd()): Promise<IttoolsConfig> {
-  const candidates = ['ittools.config.js', 'ittools.config.mjs', 'ittools.config.cjs'];
+  const candidates = [
+    'integration-test-tools.config.js',
+    'integration-test-tools.config.mjs',
+    'integration-test-tools.config.cjs',
+  ];
 
   for (const candidate of candidates) {
     const filePath = resolve(cwd, candidate);

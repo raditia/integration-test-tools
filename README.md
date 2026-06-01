@@ -17,35 +17,45 @@ pnpm add -D integration-test-tools
 
 ## Setup
 
-### 1. Jest config
+Run once after installing:
 
-```js
-// jest.config.js
-module.exports = {
-  preset: 'integration-test-tools',
-  globals: {
-    ittoolsConfig: {
-      pixelDiffThreshold: 0.01,       // 1% — default
-      failureThresholdType: 'percent', // 'percent' | 'pixel'
-      snapshotDir: '__image_snapshots__',
-    },
-  },
-};
+```bash
+npx ittools init
 ```
 
-### 2. CLI config (for `merge-coverage`)
+This checks your project root and creates any missing pieces:
+
+| File | Purpose |
+|------|---------|
+| `integration-test-tools.config.js` | All config in one place |
+| `jest.visual.config.js` | Jest config that reads from the above |
+
+And adds these scripts to `package.json`:
+
+```json
+{
+  "integration-test:base": "ittools run",
+  "integration-test:updateSnapshot": "ittools run --updateSnapshot"
+}
+```
+
+Safe to re-run — skips anything that already exists.
+
+### Config reference (`integration-test-tools.config.js`)
 
 ```js
-// ittools.config.js
-const { defineConfig } = require('integration-test-tools');
-
-module.exports = defineConfig({
-  pixelDiffThreshold: 0.01,
-  coverageReports: [
-    './packages/foo/coverage/coverage-final.json',
-    './packages/bar/coverage/coverage-final.json',
-  ],
-});
+/** @type {import('integration-test-tools').IttoolsConfig} */
+module.exports = {
+  headless: true,                              // false = open browser window
+  retries: 0,                                  // retry count per failed test
+  testMatch: ['**/*.visual.test.ts'],          // glob patterns to include
+  testPathIgnorePatterns: ['**/node_modules/**'], // glob patterns to ignore
+  pixelDiffThreshold: 0.01,                   // 1% pixel diff allowed
+  failureThresholdType: 'percent',             // 'percent' | 'pixel'
+  snapshotDir: 'snapshots',                    // baseline PNG root dir
+  baseUrl: 'http://localhost:2900',            // app server base URL
+  coverageReports: [],                         // paths for merge-coverage CLI
+};
 ```
 
 ## Writing visual tests

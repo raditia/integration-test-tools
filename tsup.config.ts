@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     setup: 'src/setup.ts',
+    init: 'src/init.ts',
     'bin/ittools': 'src/bin/ittools.ts',
     'merge-coverage': 'src/merge-coverage.ts',
   },
