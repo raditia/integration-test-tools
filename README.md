@@ -122,6 +122,7 @@ const { goto, screenshot } = setupVisualTest({ baseUrl: 'http://localhost:3000' 
 | `waitFor` | `(selector, timeout?)` | Wait for element to appear in DOM |
 | `pause` | `(ms)` | Wait fixed milliseconds |
 | `waitForResponse` | `(urlPattern)` | Wait for network response matching string or RegExp |
+| `waitForNetworkIdle` | `(timeout?)` | Wait until all network activity stops. Optional max timeout in ms |
 | `type` | `(selector, text)` | Fill input with text |
 
 ### Snapshot folder structure

@@ -23,6 +23,7 @@ export interface VisualTestHelpers {
   waitFor: (selector: string, timeout?: number) => Promise<void>;
   pause: (ms: number) => Promise<void>;
   waitForResponse: (urlPattern: string | RegExp) => Promise<void>;
+  waitForNetworkIdle: (timeout?: number) => Promise<void>;
   type: (selector: string, text: string) => Promise<void>;
 }
 
@@ -103,6 +104,10 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
 
     async waitForResponse(urlPattern) {
       await page.waitForResponse(urlPattern);
+    },
+
+    async waitForNetworkIdle(timeout) {
+      await page.waitForLoadState('networkidle', timeout ? { timeout } : undefined);
     },
 
     async type(selector, text) {
