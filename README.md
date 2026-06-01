@@ -134,7 +134,7 @@ ITTOOLS_HEADLESS=false ITTOOLS_SLOW_MO=500 pnpm test:visual
 
 1. Install: `brew install --cask xquartz` then log out and back in
 2. Open XQuartz → Preferences → Security → check **Allow connections from network clients**
-3. In a terminal: `xhost +localhost`
+3. In a terminal: `xhost +` *(allows any host — fine for local dev)*
 4. Run Docker with display forwarded:
 
 ```bash
@@ -143,24 +143,28 @@ docker run --rm \
   -e ITTOOLS_HEADLESS=false \
   -e ITTOOLS_BASE_HOST=host.docker.internal \
   ghcr.io/raditia/playwright-chromium-image:latest \
-  pnpm test:visual
+  pnpm integration-test:base
 ```
+
+> **Security note:** `xhost +` removes all X access controls. Any process on your local network can connect to your display. Revert after testing with `xhost -`.
 
 #### Windows — MobaXterm
 
 1. Install [MobaXterm](https://mobaxterm.mobatek.net) — X server starts automatically
-2. Find your WSL/Docker host IP (usually `172.x.x.x` or check MobaXterm's X display value)
+2. In MobaXterm: Settings → X11 → set **X11 remote access** to `full`
 3. Run Docker with display forwarded:
 
 ```bash
 docker run --rm \
-  -e DISPLAY=<host-ip>:0.0 \
+  -e DISPLAY=host.docker.internal:0.0 \
   -e ITTOOLS_HEADLESS=false \
   -e ITTOOLS_BASE_HOST=host.docker.internal \
   --add-host=host.docker.internal:host-gateway \
   ghcr.io/raditia/playwright-chromium-image:latest \
-  pnpm test:visual
+  pnpm integration-test:base
 ```
+
+> **Security note:** Setting X11 remote access to `full` in MobaXterm allows any host. Revert to `warn` or `rejected` after testing.
 
 > CI always runs headless — `ITTOOLS_HEADLESS` is not set in CI workflows.
 
