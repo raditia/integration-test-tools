@@ -17,25 +17,19 @@ export interface ScreenshotOverride {
 }
 
 export interface VisualTestHelpers {
-  /** Resolved base URL (protocol + host + port). Compose full URLs with this: `${baseUrl}/your/path`. */
+  /** Full Playwright Page object — use Playwright API directly. Available after beforeAll. */
+  page: Page;
+  /** Resolved base URL (protocol + host + port). Compose full URLs: `${baseUrl}/your/path`. */
   baseUrl: string;
-  goto: (url: string, options?: GotoOptions) => Promise<void>;
+  /** Capture current page state, auto-name from test path, compare against baseline. */
   screenshot: (options?: ScreenshotOverride) => Promise<void>;
-  click: (selector: string) => Promise<void>;
-  waitFor: (selector: string, timeout?: number) => Promise<void>;
-  pause: (ms: number) => Promise<void>;
-  waitForResponse: (urlPattern: string | RegExp) => Promise<void>;
-  waitForNetworkIdle: (timeout?: number) => Promise<void>;
-  type: (selector: string, text: string) => Promise<void>;
 }
 
 function deriveSnapshotPath(snapshotsBase: string): { dir: string; identifier: string } {
   const { currentTestName = 'snapshot', testPath = '' } = expect.getState();
 
-  // test/test-suites-1/Foo.visual.test.ts → test-suites-1
   const suiteDir = path.basename(path.dirname(testPath));
 
-  // 'Suite Name > test case name' → 'suite-name--test-case-name'
   const identifier = currentTestName
     .replace(/\s*>\s*/g, '--')
     .replace(/[^a-z0-9]+/gi, '-')
@@ -65,40 +59,37 @@ function resolveBaseUrl(): string {
 
 export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTestHelpers {
   let browser: Browser;
-  let page: Page;
+  let _page: Page | null = null;
 
   const globalConfig: Partial<IttoolsConfig> =
     (global as Record<string, unknown>).ittoolsConfig as Partial<IttoolsConfig> ?? {};
 
   const baseUrl = overrides.baseUrl ?? globalConfig.baseUrl ?? resolveBaseUrl();
   const snapshotsBase = globalConfig.snapshotDir ?? 'snapshots';
-  // snapdiff sits alongside snapshots/ — e.g. 'test/snapshots' → 'test/snapdiff'
   const snapdiffBase = path.join(path.dirname(snapshotsBase), 'snapdiff');
 
   beforeAll(async () => {
     browser = await chromium.launch();
-    page = await browser.newPage({
-      viewport: { width: 1280, height: 900 },
-    });
+    _page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   });
 
   afterAll(async () => {
-    await page.close();
+    await _page?.close();
     await browser.close();
   });
 
-  return {
-    baseUrl,
-
-    async goto(url, options = {}) {
-      await page.goto(url, {
-        waitUntil: options.waitUntil ?? 'networkidle',
-      });
+  const helpers: VisualTestHelpers = {
+    get page(): Page {
+      if (!_page) throw new Error('[ittools] page accessed before beforeAll — ensure setupVisualTest() is called inside describe()');
+      return _page;
     },
 
+    baseUrl,
+
     async screenshot(options = {}) {
+      if (!_page) throw new Error('[ittools] screenshot() called before beforeAll');
       const { dir, identifier } = deriveSnapshotPath(snapshotsBase);
-      const image = await page.screenshot({ fullPage: true });
+      const image = await _page.screenshot({ fullPage: true });
       expect(image).toMatchImageSnapshot({
         customSnapshotsDir: dir,
         customSnapshotIdentifier: options.name ?? identifier,
@@ -107,29 +98,7 @@ export function setupVisualTest(overrides: { baseUrl?: string } = {}): VisualTes
         failureThresholdType: options.thresholdType ?? globalConfig.failureThresholdType ?? 'percent',
       });
     },
-
-    async click(selector) {
-      await page.click(selector);
-    },
-
-    async waitFor(selector, timeout) {
-      await page.waitForSelector(selector, timeout ? { timeout } : undefined);
-    },
-
-    async pause(ms) {
-      await page.waitForTimeout(ms);
-    },
-
-    async waitForResponse(urlPattern) {
-      await page.waitForResponse(urlPattern);
-    },
-
-    async waitForNetworkIdle(timeout) {
-      await page.waitForLoadState('networkidle', timeout ? { timeout } : undefined);
-    },
-
-    async type(selector, text) {
-      await page.fill(selector, text);
-    },
   };
+
+  return helpers;
 }

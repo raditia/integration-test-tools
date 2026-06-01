@@ -57,10 +57,11 @@ Tests are organized in `describe` blocks. The page loads once in `beforeAll` and
 import { setupVisualTest } from 'integration-test-tools';
 
 describe('Bus Search - Filter', () => {
-  const { goto, baseUrl, screenshot, click, waitFor, waitForResponse, pause } = setupVisualTest();
+  const { page, baseUrl, screenshot } = setupVisualTest();
 
   beforeAll(async () => {
-    await goto(`${baseUrl}/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01`);
+    await page.goto(`${baseUrl}/en-us/bus-and-shuttle/search?from=CGK&to=SBY&date=2026-06-01`);
+    await page.waitForLoadState('networkidle');
   });
 
   it('shows initial results', async () => {
@@ -69,16 +70,16 @@ describe('Bus Search - Filter', () => {
   });
 
   it('opens filter popup on click', async () => {
-    await click('[data-testid="filter-btn"]');
+    await page.click('[data-testid="filter-btn"]');
     await screenshot();
     // → snapshots/test-suites-1/bus-search-filter--opens-filter-popup-on-click.png
   });
 
   it('shows AC filtered results', async () => {
-    await waitFor('[data-testid="filter-ac"]');
-    await click('[data-testid="filter-ac"]');
-    await click('[data-testid="apply-filter"]');
-    await waitForResponse('**/search**');
+    await page.waitForSelector('[data-testid="filter-ac"]');
+    await page.click('[data-testid="filter-ac"]');
+    await page.click('[data-testid="apply-filter"]');
+    await page.waitForResponse('**/search**');
     await screenshot();
     // → snapshots/test-suites-1/bus-search-filter--shows-ac-filtered-results.png
   });
@@ -127,19 +128,15 @@ docker run --rm \
 
 **CI (GitHub Actions `container:`)** — app server runs in the same container, `localhost` works. No env override needed.
 
-### Available actions
+### What `setupVisualTest()` returns
 
-| Method | Signature | Description |
-|--------|-----------|-------------|
+| Property | Type | Description |
+|----------|------|-------------|
+| `page` | `Page` | Full [Playwright Page](https://playwright.dev/docs/api/class-page) object. Use Playwright API directly. Available after `beforeAll`. |
 | `baseUrl` | `string` | Resolved base URL — compose full URLs: `` `${baseUrl}/your/path` `` |
-| `goto` | `(url, options?)` | Navigate to full URL |
-| `screenshot` | `(options?)` | Capture + auto-save with derived name |
-| `click` | `(selector)` | Click element |
-| `waitFor` | `(selector, timeout?)` | Wait for element to appear in DOM |
-| `pause` | `(ms)` | Wait fixed milliseconds |
-| `waitForResponse` | `(urlPattern)` | Wait for network response matching string or RegExp |
-| `waitForNetworkIdle` | `(timeout?)` | Wait until all network activity stops. Optional max timeout in ms |
-| `type` | `(selector, text)` | Fill input with text |
+| `screenshot` | `(options?) => Promise<void>` | Capture current page, auto-name from test path, compare against baseline |
+
+All interactions (`click`, `waitForSelector`, `waitForLoadState`, `keyboard`, `locator`, etc.) use `page` directly — no wrappers.
 
 ### Snapshot folder structure
 
